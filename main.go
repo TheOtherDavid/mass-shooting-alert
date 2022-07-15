@@ -25,14 +25,19 @@ func main() {
 	queryS3Bucket()
 
 	var incidents []Incident
+	//TODO: Use the last update date from the file
 	lastUpdatedDate := time.Now()
+
+	var err error
 
 	//If the last updated date is NEWER than the last triggered date, download the file
 	//TODO: Pull this out into its own function.
 	if lastUpdatedDate.After(lastTriggeredDate) || true {
-		incidents = getIncidents()
+		incidents, err = getIncidents()
+		if err != nil {
+			println("Oh no, error.")
+		}
 	}
-	println(incidents)
 
 	//Calculations
 	//Maybe find the total number of dead/wounded, and compare it to a high mark like 50?
@@ -91,6 +96,7 @@ func queryS3Bucket() {
 	}
 
 	println(s3File.Key)
+	//TODO: Return last updated date
 
 }
 
@@ -99,7 +105,7 @@ type S3File struct {
 	LastModified time.Time
 }
 
-func getIncidents() []Incident {
+func getIncidents() (incidents []Incident, err error) {
 	//So they have an S3 bucket, and we should get the file
 	bucket := "mass-shooting-tracker-data"
 	// TODO: Dynamically construct this
@@ -122,35 +128,53 @@ func getIncidents() []Incident {
 
 	result, err := client.GetObject(context.TODO(), params)
 	if err != nil {
-		println(err)
+		return
 	}
 
 	defer result.Body.Close()
 	body1, err := io.ReadAll(result.Body)
 	if err != nil {
-		fmt.Println(err)
+		return
 	}
 
 	println(string(body1))
-	var incidents []Incident
 	_ = json.Unmarshal([]byte(string(body1)), &incidents)
 
-	println(incidents)
+	incidents, err = convertDateStringToDate(incidents)
+	if err != nil {
+		return
+	}
 
-	return incidents
+	return
 }
 
 type Incident struct {
-	Date    string   `json:"date"` //Date?
-	Killed  string   `json:"killed"`
-	Wounded string   `json:"wounded"`
-	City    string   `json:"city"`
-	Names   []string `json:"names"`
-	Sources []string `json:"sources"`
+	Date       time.Time
+	DateString string   `json:"date"`
+	Killed     string   `json:"killed"`
+	Wounded    string   `json:"wounded"`
+	City       string   `json:"city"`
+	Names      []string `json:"names"`
+	Sources    []string `json:"sources"`
+}
+
+func convertDateStringToDate(incidents []Incident) (convertedIncidents []Incident, err error) {
+	for _, incident := range incidents {
+		layout := "2006-01-02T15:04:05.000Z"
+
+		var incidentDate time.Time
+		incidentDate, err = time.Parse(layout, incident.DateString)
+		if err != nil {
+			return
+		}
+		incident.Date = incidentDate
+		convertedIncidents = append(convertedIncidents, incident)
+	}
+	return
 }
 
 func extractDailyDeadAndWoundedCount(incidents []Incident) (int, int) {
-
+	//TODO: Implement
 	return 0, 0
 }
 
@@ -158,14 +182,7 @@ func getIncidentsFromToday(incidents []Incident) []Incident {
 	var incidentsFromToday []Incident
 	currentDate := time.Now().Truncate(24 * time.Hour)
 	for _, incident := range incidents {
-		layout := "2006-01-02T15:04:05.000Z"
-
-		incidentDateString := incident.Date
-		incidentDate, err := time.Parse(layout, incidentDateString)
-		if err != nil {
-			fmt.Println(err)
-		}
-		if incidentDate.Equal(currentDate) {
+		if incident.Date.Equal(currentDate) {
 			incidentsFromToday = append(incidentsFromToday, incident)
 		} else {
 			//Break out of the loop. We aren't interested in the rest
@@ -178,6 +195,10 @@ func getIncidentsFromToday(incidents []Incident) []Incident {
 func isNewShootingToday(incidents []Incident, lastTriggeredCity string, lastTriggeredDate time.Time) bool {
 	//Determine whether there has been a shooting that meets the criteria
 	//Date/City is close enough, since we don't have a real timestamp. Unlikely for multiple shootings in the same day.
-
+	for _, incident := range incidents {
+		if incident.City == lastTriggeredCity && incident.Date == lastTriggeredDate {
+			return true
+		}
+	}
 	return false
 }
