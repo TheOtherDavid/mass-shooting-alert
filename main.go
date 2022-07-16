@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"strconv"
 	"time"
@@ -12,23 +13,26 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/tidwall/gjson"
 	//"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
 
 func main() {
 	//Find last triggered date.
 	//Access local data file?
-	lastTriggeredDate := time.Now()
-	lastTriggeredCity := "New York"
 
+	//lastTriggeredDate := time.Now()
+	//lastTriggeredCity := "New York"
+	lastTriggeredCity, lastTriggeredDate, err := getLastTriggeredData()
+	if err != nil {
+		println("Oh no, error.")
+	}
 	//Hit the MST bucket and get the last updated date
-	queryS3Bucket()
+	lastUpdatedDate := queryS3Bucket()
 
 	var incidents []Incident
 	//TODO: Use the last update date from the file
-	lastUpdatedDate := time.Now()
-
-	var err error
+	//lastUpdatedDate := time.Now()
 
 	//If the last updated date is NEWER than the last triggered date, download the file
 	//TODO: Pull this out into its own function.
@@ -56,7 +60,29 @@ func main() {
 	}
 }
 
-func queryS3Bucket() {
+func getLastTriggeredData() (lastTriggeredCity string, lastTriggeredDate time.Time, err error) {
+
+	configFile, err := os.Open("config/data.json")
+	if err != nil {
+		return "", time.Time{}, err
+	}
+
+	byteValue, _ := ioutil.ReadAll(configFile)
+	lastTriggeredCity = gjson.GetBytes(byteValue, "last_triggered_city").Str
+	lastTriggeredDateString := gjson.GetBytes(byteValue, "last_triggered_date").Str
+
+	layout := "2006-01-02T15:04:05.000Z"
+	lastTriggeredDate, err = time.Parse(layout, lastTriggeredDateString)
+	if err != nil {
+		return
+	}
+
+	fmt.Println(lastTriggeredDateString)
+
+	return lastTriggeredCity, lastTriggeredDate, nil
+}
+
+func queryS3Bucket() time.Time {
 	//So they have an S3 bucket, and we should get the file
 	bucket := "mass-shooting-tracker-data"
 	// TODO: Dynamically construct this
@@ -96,7 +122,7 @@ func queryS3Bucket() {
 	}
 
 	println(s3File.Key)
-	//TODO: Return last updated date
+	return s3File.LastModified
 
 }
 
