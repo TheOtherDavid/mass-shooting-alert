@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
+	"net/http"
 	"os"
 	"strconv"
 	"time"
@@ -55,6 +58,7 @@ func main() {
 	if newShooting {
 		println("Oh no, there's a new shooting!")
 		//Do some other stuff
+		sendWLEDPulse()
 	} else {
 		println("No shootings this time!")
 	}
@@ -229,4 +233,68 @@ func isNewShootingToday(incidents []Incident, lastTriggeredCity string, lastTrig
 		}
 	}
 	return response
+}
+
+func sendWLEDPulse() {
+	//First get the current WLED settings
+	currentWled := getWLEDSettings()
+
+	//Make lights pulse red. Use a basic pulse at a basic speed.
+	configFile, err := os.Open("config/data.json")
+	if err != nil {
+		return
+	}
+
+	byteValue, _ := ioutil.ReadAll(configFile)
+	redAlertPulseJson := gjson.GetBytes(byteValue, "wled_red_alert_pulse")
+	redAlertPulseString := redAlertPulseJson.Raw
+
+	sendWLEDCommand(redAlertPulseString)
+	time.Sleep(5 * time.Second)
+	sendWLEDCommand(currentWled)
+	// base_url := os.Getenv("WLED_IP")
+	// url := base_url + "/json/state"
+
+	// body, _ := json.Marshal(redAlertPulseString)
+
+	// response, err := http.Post(url, "", bytes.NewBuffer(body))
+	// if err != nil {
+	// 	fmt.Println("Oh no, error.")
+	// }
+}
+
+func sendWLEDCommand(bodyString string) {
+	base_url := os.Getenv("WLED_IP")
+	url := base_url + "/json/state"
+
+	//body, _ := json.Marshal(bodyString)
+	var jsonprep = []byte(bodyString)
+
+	response, err := http.Post(url, "application/json", bytes.NewBuffer(jsonprep))
+	if err != nil {
+		fmt.Println("Oh no, error.")
+	}
+	println(response)
+}
+
+func getWLEDSettings() string {
+	base_url := os.Getenv("WLED_IP")
+	url := base_url + "/json/state"
+
+	response, err := http.Get(url)
+	if err != nil {
+		fmt.Println("Oh no, error.")
+	}
+
+	defer response.Body.Close()
+
+	b, err := io.ReadAll(response.Body)
+	// b, err := ioutil.ReadAll(resp.Body)  Go.1.15 and earlier
+	if err != nil {
+		log.Fatalln(err)
+	}
+	responseString := string(b)
+
+	println(response)
+	return responseString
 }
