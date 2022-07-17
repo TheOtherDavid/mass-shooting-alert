@@ -46,7 +46,7 @@ func main() {
 		}
 	}
 
-	//Calculations
+	//Calculations. Use goroutines?
 	//Maybe find the total number of dead/wounded, and compare it to a high mark like 50?
 	dead, wounded := extractDailyDeadAndWoundedCount(incidents)
 	println(strconv.Itoa(dead))
@@ -239,7 +239,6 @@ func sendWLEDPulse() {
 	//First get the current WLED settings
 	currentWled := getWLEDSettings()
 
-	//Make lights pulse red. Use a basic pulse at a basic speed.
 	configFile, err := os.Open("config/data.json")
 	if err != nil {
 		return
@@ -250,24 +249,15 @@ func sendWLEDPulse() {
 	redAlertPulseString := redAlertPulseJson.Raw
 
 	sendWLEDCommand(redAlertPulseString)
+	//Wait a number of seconds and return the lights to their prior state.
 	time.Sleep(5 * time.Second)
 	sendWLEDCommand(currentWled)
-	// base_url := os.Getenv("WLED_IP")
-	// url := base_url + "/json/state"
-
-	// body, _ := json.Marshal(redAlertPulseString)
-
-	// response, err := http.Post(url, "", bytes.NewBuffer(body))
-	// if err != nil {
-	// 	fmt.Println("Oh no, error.")
-	// }
 }
 
 func sendWLEDCommand(bodyString string) {
 	base_url := os.Getenv("WLED_IP")
 	url := base_url + "/json/state"
 
-	//body, _ := json.Marshal(bodyString)
 	var jsonprep = []byte(bodyString)
 
 	response, err := http.Post(url, "application/json", bytes.NewBuffer(jsonprep))
@@ -289,7 +279,6 @@ func getWLEDSettings() string {
 	defer response.Body.Close()
 
 	b, err := io.ReadAll(response.Body)
-	// b, err := ioutil.ReadAll(resp.Body)  Go.1.15 and earlier
 	if err != nil {
 		log.Fatalln(err)
 	}
