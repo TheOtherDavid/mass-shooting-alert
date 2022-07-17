@@ -19,4 +19,5 @@ require (
 	github.com/tidwall/gjson v1.14.1 // indirect
 	golang.org/x/net v0.0.0-20220630215102-69896b714898 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
+	gopkg.in/ini.v1 v1.66.6 // indirect
 )

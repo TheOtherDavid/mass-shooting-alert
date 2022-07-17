@@ -16,17 +16,14 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/tidwall/gjson"
-	//"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"gopkg.in/ini.v1"
 )
 
 func main() {
 	//Find last triggered date.
 	//Access local data file?
 
-	//lastTriggeredDate := time.Now()
-	//lastTriggeredCity := "New York"
-	lastTriggeredCity, lastTriggeredDate, err := getLastTriggeredData()
+	lastShootingCity, lastShootingDate, lastTriggeredDate, err := getLastTriggeredData()
 	if err != nil {
 		println("Oh no, error.")
 	}
@@ -44,6 +41,9 @@ func main() {
 		if err != nil {
 			println("Oh no, error.")
 		}
+	} else {
+		println("No shootings this time!")
+		return
 	}
 
 	//Calculations. Use goroutines?
@@ -51,36 +51,45 @@ func main() {
 	dead, wounded := extractDailyDeadAndWoundedCount(incidents)
 	println(strconv.Itoa(dead))
 	println(strconv.Itoa(wounded))
-	incidentsFromToday := getIncidentsFromToday(incidents)
-	newShooting := isNewShootingToday(incidentsFromToday, lastTriggeredCity, lastTriggeredDate)
+
+	newShooting := isNewShootingToday(incidents, lastShootingCity, lastShootingDate)
 
 	//If result is true, call WLED
 	if newShooting {
 		println("Oh no, there's a new shooting!")
 		//Do some other stuff
+		//Ohhh, should we make this a goroutine? That way we don't have to wait on it to update the file
 		sendWLEDPulse()
 		//Update the data file to have the latest data
 		lastTriggeredIncident := incidents[0]
-		lastTriggeredCity = lastTriggeredIncident.City
-		lastTriggeredDate = lastTriggeredIncident.Date
-		SetLastTriggeredData(lastTriggeredCity, lastTriggeredDate)
+		lastShootingCity = lastTriggeredIncident.City
+		lastShootingDate = lastTriggeredIncident.Date
+		lastTriggeredDate = time.Now()
+		SetLastTriggeredData(lastShootingCity, lastShootingDate, lastTriggeredDate)
 	} else {
 		println("No shootings this time!")
 	}
+
 }
 
-func getLastTriggeredData() (lastTriggeredCity string, lastTriggeredDate time.Time, err error) {
+func getLastTriggeredData() (lastShootingCity string, lastShootingDate time.Time, lastTriggeredDate time.Time, err error) {
 
-	configFile, err := os.Open("config/data.json")
+	cfg, err := ini.Load("config/data.ini")
 	if err != nil {
-		return "", time.Time{}, err
+		fmt.Printf("Fail to read file: %v", err)
+		os.Exit(1)
 	}
 
-	byteValue, _ := ioutil.ReadAll(configFile)
-	lastTriggeredCity = gjson.GetBytes(byteValue, "last_triggered_city").Str
-	lastTriggeredDateString := gjson.GetBytes(byteValue, "last_triggered_date").Str
+	// Classic read of values, default section can be represented as empty string
+	lastShootingCity = cfg.Section("").Key("last_shooting_city").String()
+	lastShootingDateString := cfg.Section("").Key("last_shooting_date").String()
+	lastTriggeredDateString := cfg.Section("").Key("last_triggered_date").String()
 
 	layout := "2006-01-02T15:04:05.000Z"
+	lastShootingDate, err = time.Parse(layout, lastShootingDateString)
+	if err != nil {
+		return
+	}
 	lastTriggeredDate, err = time.Parse(layout, lastTriggeredDateString)
 	if err != nil {
 		return
@@ -88,11 +97,23 @@ func getLastTriggeredData() (lastTriggeredCity string, lastTriggeredDate time.Ti
 
 	fmt.Println(lastTriggeredDateString)
 
-	return lastTriggeredCity, lastTriggeredDate, nil
+	return lastShootingCity, lastShootingDate, lastTriggeredDate, nil
 }
 
-func SetLastTriggeredData(lastTriggeredCity string, lastTriggeredDate time.Time) {
+func SetLastTriggeredData(lastShootingCity string, lastShootingDate time.Time, lastTriggeredDate time.Time) {
+	cfg, err := ini.Load("config/data.ini")
+	if err != nil {
+		fmt.Printf("Fail to read file: %v", err)
+		os.Exit(1)
+	}
+	layout := "2006-01-02T15:04:05.000Z"
+	lastShootingDateString := lastShootingDate.Format(layout)
+	lastTriggeredDateString := lastTriggeredDate.Format(layout)
 
+	cfg.Section("").Key("last_shooting_city").SetValue(lastShootingCity)
+	cfg.Section("").Key("last_shooting_date").SetValue(lastShootingDateString)
+	cfg.Section("").Key("last_triggered_date").SetValue(lastTriggeredDateString)
+	cfg.SaveTo("config/data.ini")
 }
 
 func queryS3Bucket() time.Time {
@@ -176,7 +197,6 @@ func getIncidents() (incidents []Incident, err error) {
 		return
 	}
 
-	println(string(body1))
 	_ = json.Unmarshal([]byte(string(body1)), &incidents)
 
 	incidents, err = convertDateStringToDate(incidents)
@@ -232,12 +252,15 @@ func getIncidentsFromToday(incidents []Incident) []Incident {
 	return incidentsFromToday
 }
 
-func isNewShootingToday(incidents []Incident, lastTriggeredCity string, lastTriggeredDate time.Time) bool {
+func isNewShootingToday(incidents []Incident, lastShootingCity string, lastShootingDate time.Time) bool {
 	//Determine whether there has been a shooting that meets the criteria
-	//Date/City is close enough, since we don't have a real timestamp. Unlikely for multiple shootings in the same day.
+	//Date/City is close enough, since we don't have a real timestamp. Unlikely for multiple shootings in the same city on the same day.
+	if len(incidents) == 0 {
+		return false
+	}
 	response := true
 	for _, incident := range incidents {
-		if incident.City == lastTriggeredCity && incident.Date == lastTriggeredDate {
+		if incident.City == lastShootingCity && incident.Date == lastShootingDate {
 			response = false
 		}
 	}
@@ -268,11 +291,10 @@ func sendWLEDCommand(bodyString string) {
 
 	var jsonprep = []byte(bodyString)
 
-	response, err := http.Post(url, "application/json", bytes.NewBuffer(jsonprep))
+	_, err := http.Post(url, "application/json", bytes.NewBuffer(jsonprep))
 	if err != nil {
 		fmt.Println("Oh no, error.")
 	}
-	println(response)
 }
 
 func getWLEDSettings() string {
@@ -281,7 +303,7 @@ func getWLEDSettings() string {
 
 	response, err := http.Get(url)
 	if err != nil {
-		fmt.Println("Oh no, error.")
+		log.Fatalln(err)
 	}
 
 	defer response.Body.Close()
@@ -292,6 +314,5 @@ func getWLEDSettings() string {
 	}
 	responseString := string(b)
 
-	println(response)
 	return responseString
 }
