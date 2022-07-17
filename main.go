@@ -59,6 +59,11 @@ func main() {
 		println("Oh no, there's a new shooting!")
 		//Do some other stuff
 		sendWLEDPulse()
+		//Update the data file to have the latest data
+		lastTriggeredIncident := incidents[0]
+		lastTriggeredCity = lastTriggeredIncident.City
+		lastTriggeredDate = lastTriggeredIncident.Date
+		SetLastTriggeredData(lastTriggeredCity, lastTriggeredDate)
 	} else {
 		println("No shootings this time!")
 	}
@@ -84,6 +89,10 @@ func getLastTriggeredData() (lastTriggeredCity string, lastTriggeredDate time.Ti
 	fmt.Println(lastTriggeredDateString)
 
 	return lastTriggeredCity, lastTriggeredDate, nil
+}
+
+func SetLastTriggeredData(lastTriggeredCity string, lastTriggeredDate time.Time) {
+
 }
 
 func queryS3Bucket() time.Time {
@@ -239,14 +248,13 @@ func sendWLEDPulse() {
 	//First get the current WLED settings
 	currentWled := getWLEDSettings()
 
-	configFile, err := os.Open("config/data.json")
+	configFile, err := os.Open("config/wled_red_alert_post.json")
 	if err != nil {
 		return
 	}
 
 	byteValue, _ := ioutil.ReadAll(configFile)
-	redAlertPulseJson := gjson.GetBytes(byteValue, "wled_red_alert_pulse")
-	redAlertPulseString := redAlertPulseJson.Raw
+	redAlertPulseString := string(byteValue)
 
 	sendWLEDCommand(redAlertPulseString)
 	//Wait a number of seconds and return the lights to their prior state.
