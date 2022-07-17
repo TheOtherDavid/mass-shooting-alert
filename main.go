@@ -36,7 +36,7 @@ func main() {
 
 	//If the last updated date is NEWER than the last triggered date, download the file
 	//TODO: Pull this out into its own function.
-	if lastUpdatedDate.After(lastTriggeredDate) || true {
+	if lastTriggeredDate.Before(lastUpdatedDate) {
 		incidents, err = getIncidents()
 		if err != nil {
 			println("Oh no, error.")
@@ -100,7 +100,7 @@ func queryS3Bucket() time.Time {
 
 	params := &s3.ListObjectsV2Input{
 		Bucket: aws.String(bucket),
-		Prefix: aws.String(filename), //uploaded
+		Prefix: aws.String(filename),
 	}
 
 	p := s3.NewListObjectsV2Paginator(client, params)
@@ -149,7 +149,7 @@ func getIncidents() (incidents []Incident, err error) {
 
 	params := &s3.GetObjectInput{
 		Bucket: aws.String(bucket),
-		Key:    aws.String(filename), //uploaded
+		Key:    aws.String(filename),
 	}
 
 	result, err := client.GetObject(context.TODO(), params)
@@ -206,7 +206,8 @@ func extractDailyDeadAndWoundedCount(incidents []Incident) (int, int) {
 
 func getIncidentsFromToday(incidents []Incident) []Incident {
 	var incidentsFromToday []Incident
-	currentDate := time.Now().Truncate(24 * time.Hour)
+	t := time.Now()
+	currentDate := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
 	for _, incident := range incidents {
 		if incident.Date.Equal(currentDate) {
 			incidentsFromToday = append(incidentsFromToday, incident)
@@ -221,10 +222,11 @@ func getIncidentsFromToday(incidents []Incident) []Incident {
 func isNewShootingToday(incidents []Incident, lastTriggeredCity string, lastTriggeredDate time.Time) bool {
 	//Determine whether there has been a shooting that meets the criteria
 	//Date/City is close enough, since we don't have a real timestamp. Unlikely for multiple shootings in the same day.
+	response := true
 	for _, incident := range incidents {
 		if incident.City == lastTriggeredCity && incident.Date == lastTriggeredDate {
-			return true
+			response = false
 		}
 	}
-	return false
+	return response
 }
