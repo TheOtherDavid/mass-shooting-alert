@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -25,10 +26,13 @@ func main() {
 
 	lastShootingCity, lastShootingDate, lastTriggeredDate, err := getLastTriggeredData()
 	if err != nil {
-		println("Oh no, error.")
+		println("Error retrieving data from file.")
 	}
 	//Hit the MST bucket and get the last updated date
-	lastUpdatedDate := queryS3Bucket()
+	lastUpdatedDate, err := queryS3Bucket()
+	if err != nil {
+		println("Error retrieving metadata from S3 bucket.")
+	}
 
 	var incidents []Incident
 	//TODO: Use the last update date from the file
@@ -39,7 +43,7 @@ func main() {
 	if lastTriggeredDate.Before(lastUpdatedDate) {
 		incidents, err = getIncidents()
 		if err != nil {
-			println("Oh no, error.")
+			println("Error retrieving incidents from S3 bucket.")
 		}
 	} else {
 		println("No shootings this time!")
@@ -116,7 +120,7 @@ func SetLastTriggeredData(lastShootingCity string, lastShootingDate time.Time, l
 	cfg.SaveTo("config/data.ini")
 }
 
-func queryS3Bucket() time.Time {
+func queryS3Bucket() (lastModified time.Time, err error) {
 	//So they have an S3 bucket, and we should get the file
 	bucket := "mass-shooting-tracker-data"
 	// TODO: Dynamically construct this
@@ -126,6 +130,16 @@ func queryS3Bucket() time.Time {
 
 	accessKey := os.Getenv("AWS_ACCESS_KEY")
 	secretKey := os.Getenv("AWS_SECRET_KEY")
+
+	if accessKey == "" {
+		errors.New("Env variable access_key not found")
+		return time.Time{}, err
+	}
+
+	if secretKey == "" {
+		errors.New("Env variable secret_key not found")
+		return time.Time{}, err
+	}
 
 	client := s3.New(s3.Options{
 		Region:      "us-east-2",
@@ -156,7 +170,7 @@ func queryS3Bucket() time.Time {
 	}
 
 	println(s3File.Key)
-	return s3File.LastModified
+	return s3File.LastModified, nil
 
 }
 
