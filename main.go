@@ -45,7 +45,9 @@ func main() {
 		if err != nil {
 			println("Error retrieving incidents from S3 bucket.")
 		}
+		println("Incidents downloaded.")
 	} else {
+		println("Not downloading incidents, no new update.")
 		println("No shootings this time!")
 		return
 	}
