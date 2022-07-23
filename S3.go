@@ -25,12 +25,12 @@ func queryS3Bucket() (lastModified time.Time, err error) {
 	secretKey := os.Getenv("AWS_SECRET_KEY")
 
 	if accessKey == "" {
-		err = errors.New("env variable access_key not found")
+		err = errors.New("env variable AWS_ACCESS_KEY not found")
 		return time.Time{}, err
 	}
 
 	if secretKey == "" {
-		err = errors.New("env variable secret_key not found")
+		err = errors.New("env variable AWS_SECRET_KEY not found")
 		return time.Time{}, err
 	}
 
