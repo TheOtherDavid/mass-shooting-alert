@@ -26,14 +26,14 @@ func main() {
 
 	lastShootingCity, lastShootingDate, lastTriggeredDate, err := getLastTriggeredData()
 	if err != nil {
-		println("Error retrieving data from file.")
+		fmt.Printf("Error retrieving data from file.\n")
 	}
 	//Hit the MST bucket and get the last updated date
 	lastUpdatedDate, err := queryS3Bucket()
 	if err != nil {
-		println("Error retrieving metadata from S3 bucket: %s", err)
+		fmt.Printf("Error retrieving metadata from S3 bucket: %s\n", err)
 	}
-	fmt.Printf("LastUpdatedDate: %s \n", lastUpdatedDate)
+	fmt.Printf("LastUpdatedDate: %s\n", lastUpdatedDate)
 
 	var incidents []Incident
 	//TODO: Use the last update date from the file
@@ -42,16 +42,16 @@ func main() {
 	//If the last updated date is NEWER than the last triggered date, download the file
 	//TODO: Pull this out into its own function.
 	if lastTriggeredDate.Before(lastUpdatedDate) {
-		fmt.Printf("Last alert triggered date %s is before last file update date %s. Downloading incidents. \n", lastTriggeredDate.String(), lastUpdatedDate.String())
+		fmt.Printf("Last alert triggered date %s is before last file update date %s. Downloading incidents.\n", lastTriggeredDate.String(), lastUpdatedDate.String())
 
 		incidents, err = getIncidents()
 		if err != nil {
-			println("Error retrieving incidents from S3 bucket.")
+			fmt.Printf("Error retrieving incidents from S3 bucket.\n")
 		}
-		println("Incidents downloaded.")
+		fmt.Printf("Incidents downloaded.\n")
 	} else {
-		fmt.Printf("Last alert triggered date %s is after last file update date %s. Not downloading incidents. \n", lastTriggeredDate.String(), lastUpdatedDate.String())
-		println("No shootings this time!")
+		fmt.Printf("Last alert triggered date %s is after last file update date %s. Not downloading incidents.\n", lastTriggeredDate.String(), lastUpdatedDate.String())
+		println("No shootings this time!\n")
 		return
 	}
 
@@ -177,7 +177,7 @@ func queryS3Bucket() (lastModified time.Time, err error) {
 		// next page takes a context
 		page, err := p.NextPage(context.TODO())
 		if err != nil {
-			fmt.Errorf("failed to get a page, %w", err)
+			return time.Time{}, err
 		}
 		//Take first (probably only) record
 		file := page.Contents[0]
