@@ -41,13 +41,15 @@ func main() {
 	//If the last updated date is NEWER than the last triggered date, download the file
 	//TODO: Pull this out into its own function.
 	if lastTriggeredDate.Before(lastUpdatedDate) {
+		fmt.Printf("Last alert triggered date %s is before last file update date %s. Downloading incidents.", lastTriggeredDate.String(), lastUpdatedDate.String())
+
 		incidents, err = getIncidents()
 		if err != nil {
 			println("Error retrieving incidents from S3 bucket.")
 		}
 		println("Incidents downloaded.")
 	} else {
-		println("Not downloading incidents, no new update.")
+		fmt.Printf("Last alert triggered date %s is after last file update date %s. Not downloading incidents.", lastTriggeredDate.String(), lastUpdatedDate.String())
 		println("No shootings this time!")
 		return
 	}
@@ -70,9 +72,13 @@ func main() {
 		lastTriggeredIncident := incidents[0]
 		lastShootingCity = lastTriggeredIncident.City
 		lastShootingDate = lastTriggeredIncident.Date
-		lastTriggeredDate = time.Now()
+
+		lastTriggeredDate = time.Now().UTC()
 		SetLastTriggeredData(lastShootingCity, lastShootingDate, lastTriggeredDate)
 	} else {
+		zeroTime := time.Time{}
+		now := time.Now().UTC()
+		SetLastTriggeredData("", zeroTime, now)
 		println("No shootings this time!")
 	}
 
@@ -112,13 +118,22 @@ func SetLastTriggeredData(lastShootingCity string, lastShootingDate time.Time, l
 		fmt.Printf("Fail to read file: %v", err)
 		os.Exit(1)
 	}
-	layout := "2006-01-02T15:04:05.000Z"
-	lastShootingDateString := lastShootingDate.Format(layout)
-	lastTriggeredDateString := lastTriggeredDate.Format(layout)
 
-	cfg.Section("").Key("last_shooting_city").SetValue(lastShootingCity)
-	cfg.Section("").Key("last_shooting_date").SetValue(lastShootingDateString)
-	cfg.Section("").Key("last_triggered_date").SetValue(lastTriggeredDateString)
+	layout := "2006-01-02T15:04:05.000Z"
+	zeroTime := time.Time{}
+
+	if lastShootingCity != "" {
+		cfg.Section("").Key("last_shooting_city").SetValue(lastShootingCity)
+	}
+	if lastShootingDate != zeroTime {
+		lastShootingDateString := lastShootingDate.Format(layout)
+		cfg.Section("").Key("last_shooting_date").SetValue(lastShootingDateString)
+	}
+	if lastTriggeredDate != zeroTime {
+		lastTriggeredDateString := lastTriggeredDate.Format(layout)
+		cfg.Section("").Key("last_triggered_date").SetValue(lastTriggeredDateString)
+	}
+
 	cfg.SaveTo("config/data.ini")
 }
 
