@@ -16,11 +16,13 @@ func main() {
 	lastShootingCity, lastShootingDate, lastTriggeredDate, err := getLastTriggeredData()
 	if err != nil {
 		fmt.Printf("Error retrieving data from file.\n")
+		return
 	}
 	//Hit the MST bucket and get the last updated date
 	lastUpdatedDate, err := queryS3Bucket()
 	if err != nil {
 		fmt.Printf("Error retrieving metadata from S3 bucket: %s\n", err)
+		return
 	}
 	fmt.Printf("LastUpdatedDate: %s\n", lastUpdatedDate)
 
@@ -36,11 +38,12 @@ func main() {
 		incidents, err = getIncidents()
 		if err != nil {
 			fmt.Printf("Error retrieving incidents from S3 bucket.\n")
+			return
 		}
 		fmt.Printf("Incidents downloaded.\n")
 	} else {
 		fmt.Printf("Last alert triggered date %s is after last file update date %s. Not downloading incidents.\n", lastTriggeredDate.String(), lastUpdatedDate.String())
-		println("No shootings this time!\n")
+		fmt.Printf("No shootings this time!\n")
 		return
 	}
 
