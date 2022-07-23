@@ -1,15 +1,11 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
-	"log"
-	"net/http"
 	"os"
 	"strconv"
 	"time"
@@ -67,8 +63,8 @@ func main() {
 	if newShooting {
 		println("Oh no, there's a new shooting!")
 		//Do some other stuff
-		//Ohhh, should we make this a goroutine? That way we don't have to wait on it to update the file
-		sendWLEDPulse()
+		//Should we make this a goroutine? That way we don't have to wait on it to update the file
+		SendWLEDPulse()
 		//Update the data file to have the latest data
 		lastTriggeredIncident := incidents[0]
 		lastShootingCity = lastTriggeredIncident.City
@@ -297,54 +293,4 @@ func isNewShootingToday(incidents []Incident, lastShootingCity string, lastShoot
 		}
 	}
 	return response
-}
-
-func sendWLEDPulse() {
-	//First get the current WLED settings
-	currentWled := getWLEDSettings()
-
-	configFile, err := os.Open("config/wled_red_alert_post.json")
-	if err != nil {
-		return
-	}
-
-	byteValue, _ := ioutil.ReadAll(configFile)
-	redAlertPulseString := string(byteValue)
-
-	sendWLEDCommand(redAlertPulseString)
-	//Wait a number of seconds and return the lights to their prior state.
-	time.Sleep(5 * time.Second)
-	sendWLEDCommand(currentWled)
-}
-
-func sendWLEDCommand(bodyString string) {
-	base_url := os.Getenv("WLED_IP")
-	url := base_url + "/json/state"
-
-	var jsonprep = []byte(bodyString)
-
-	_, err := http.Post(url, "application/json", bytes.NewBuffer(jsonprep))
-	if err != nil {
-		fmt.Println("Oh no, error.")
-	}
-}
-
-func getWLEDSettings() string {
-	base_url := os.Getenv("WLED_IP")
-	url := base_url + "/json/state"
-
-	response, err := http.Get(url)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	defer response.Body.Close()
-
-	b, err := io.ReadAll(response.Body)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	responseString := string(b)
-
-	return responseString
 }
