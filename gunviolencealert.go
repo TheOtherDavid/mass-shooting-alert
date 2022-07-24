@@ -3,7 +3,6 @@ package alert
 import (
 	"fmt"
 	"os"
-	"strconv"
 	"time"
 
 	"gopkg.in/ini.v1"
@@ -46,15 +45,13 @@ func GunViolenceAlert() {
 
 	//Calculations. Use goroutines?
 	//Maybe find the total number of dead/wounded, and compare it to a high mark like 50?
-	dead, wounded := extractDailyDeadAndWoundedCount(incidents)
-	println(strconv.Itoa(dead))
-	println(strconv.Itoa(wounded))
+	//dead, wounded := extractDailyDeadAndWoundedCount(incidents)
 
 	newShooting := isNewShootingToday(incidents, lastShootingCity, lastShootingDate)
 
 	//If result is true, call WLED
 	if newShooting {
-		println("Oh no, there's a new shooting!")
+		fmt.Printf("Oh no, there's a new shooting!\n")
 		//Do some other stuff
 		//Should we make this a goroutine? That way we don't have to wait on it to update the file
 		SendWLEDPulse()
@@ -70,7 +67,7 @@ func GunViolenceAlert() {
 		now := time.Now().UTC()
 		fmt.Printf("Updating last triggered data with date %s\n", now)
 		SetLastTriggeredData("", zeroTime, now)
-		println("No shootings this time!")
+		fmt.Printf("No shootings this time!\n")
 	}
 
 }
@@ -165,15 +162,20 @@ func getIncidentsFromToday(incidents []Incident) []Incident {
 }
 
 func isNewShootingToday(incidents []Incident, lastShootingCity string, lastShootingDate time.Time) bool {
+	fmt.Printf("Analysing incidents.\n")
 	//Determine whether there has been a shooting that meets the criteria
 	//Date/City is close enough, since we don't have a real timestamp. Unlikely for multiple shootings in the same city on the same day.
 	if len(incidents) == 0 {
 		return false
 	}
 	response := true
-	for _, incident := range incidents {
+	for i, incident := range incidents {
 		if incident.City == lastShootingCity && incident.Date == lastShootingDate {
 			response = false
+		}
+		if i > 3 {
+			//Hop out of loop after the first three incidents, since they're in order by time descending.
+			continue
 		}
 	}
 	return response
