@@ -37,7 +37,7 @@ func GunViolenceAlert() {
 
 		incidents, err = getIncidents()
 		if err != nil {
-			fmt.Printf("Error retrieving incidents from S3 bucket.\n")
+			fmt.Printf("Error retrieving incidents from S3 bucket: %s\n", err)
 			return
 		}
 		fmt.Printf("Incidents downloaded.\n")

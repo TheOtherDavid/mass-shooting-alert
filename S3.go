@@ -95,20 +95,20 @@ func getIncidents() (incidents []Incident, err error) {
 
 	result, err := client.GetObject(context.TODO(), params)
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	defer result.Body.Close()
 	body1, err := io.ReadAll(result.Body)
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	_ = json.Unmarshal([]byte(string(body1)), &incidents)
 
 	incidents, err = convertDateStringToDate(incidents)
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	return
