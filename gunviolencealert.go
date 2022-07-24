@@ -71,6 +71,7 @@ func GunViolenceAlert() {
 	} else {
 		zeroTime := time.Time{}
 		now := time.Now().UTC()
+		fmt.Printf("Updating last triggered data with date %s\n", now)
 		SetLastTriggeredData("", zeroTime, now)
 		println("No shootings this time!")
 	}
@@ -78,8 +79,8 @@ func GunViolenceAlert() {
 }
 
 func getLastTriggeredData() (lastShootingCity string, lastShootingDate time.Time, lastTriggeredDate time.Time, err error) {
-
-	cfg, err := ini.Load("config/data.ini")
+	appRoot := os.Getenv("APP_ROOT")
+	cfg, err := ini.Load(appRoot + "/config/data.ini")
 	if err != nil {
 		fmt.Printf("Fail to read file: %v", err)
 		os.Exit(1)
@@ -106,7 +107,10 @@ func getLastTriggeredData() (lastShootingCity string, lastShootingDate time.Time
 }
 
 func SetLastTriggeredData(lastShootingCity string, lastShootingDate time.Time, lastTriggeredDate time.Time) {
-	cfg, err := ini.Load("config/data.ini")
+	appRoot := os.Getenv("APP_ROOT")
+	filename := appRoot + "/config/data.ini"
+
+	cfg, err := ini.Load(filename)
 	if err != nil {
 		fmt.Printf("Fail to read file: %v", err)
 		os.Exit(1)
@@ -127,7 +131,7 @@ func SetLastTriggeredData(lastShootingCity string, lastShootingDate time.Time, l
 		cfg.Section("").Key("last_triggered_date").SetValue(lastTriggeredDateString)
 	}
 
-	cfg.SaveTo("config/data.ini")
+	cfg.SaveTo(filename)
 }
 
 func convertDateStringToDate(incidents []Incident) (convertedIncidents []Incident, err error) {
