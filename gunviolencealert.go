@@ -54,7 +54,10 @@ func GunViolenceAlert() {
 		fmt.Printf("Oh no, there's a new shooting!\n")
 		//Do some other stuff
 		//Should we make this a goroutine? That way we don't have to wait on it to update the file
-		SendWLEDPulse()
+		err = SendWLEDPulse()
+		if err != nil {
+			fmt.Printf("Error sending WLED pulse: %s\n", err)
+		}
 		//Update the data file to have the latest data
 		lastTriggeredIncident := incidents[0]
 		lastShootingCity = lastTriggeredIncident.City

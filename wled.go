@@ -12,13 +12,13 @@ import (
 	"time"
 )
 
-func SendWLEDPulse() {
+func SendWLEDPulse() error {
 	//First get the current WLED settings
 	currentWled := getWLEDSettings()
 
 	configFile, err := os.Open("config/wled_red_alert_post.json")
 	if err != nil {
-		return
+		return err
 	}
 
 	byteValue, _ := ioutil.ReadAll(configFile)
@@ -33,6 +33,7 @@ func SendWLEDPulse() {
 	//Wait a number of seconds and return the lights to their prior state.
 	time.Sleep(time.Duration(alertLength) * time.Second)
 	sendWLEDCommand(currentWled)
+	return nil
 }
 
 func sendWLEDCommand(bodyString string) {
