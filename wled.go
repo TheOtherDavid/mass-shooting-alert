@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -23,9 +24,14 @@ func SendWLEDPulse() {
 	byteValue, _ := ioutil.ReadAll(configFile)
 	redAlertPulseString := string(byteValue)
 
+	alertLength, err := strconv.Atoi(os.Getenv("ALERT_LENGTH_SECONDS"))
+	if err != nil {
+		fmt.Printf("ALERT_LENGTH_SECONDS environment variable not found, or not an integer. Defaulting to 5 seconds.\n")
+		alertLength = 5
+	}
 	sendWLEDCommand(redAlertPulseString)
 	//Wait a number of seconds and return the lights to their prior state.
-	time.Sleep(5 * time.Second)
+	time.Sleep(time.Duration(alertLength) * time.Second)
 	sendWLEDCommand(currentWled)
 }
 
