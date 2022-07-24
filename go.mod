@@ -1,4 +1,4 @@
-module github.com/TheOtherDavid/Gun-Violence-Alert
+module github.com/TheOtherDavid/gun-violence-alert
 
 go 1.16
 

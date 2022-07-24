@@ -1,4 +1,4 @@
-package main
+package alert
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"gopkg.in/ini.v1"
 )
 
-func main() {
+func GunViolenceAlert() {
 	//Find last triggered date.
 	//Access local data file?
 
