@@ -62,9 +62,7 @@ func queryS3Bucket() (lastModified time.Time, err error) {
 		}
 	}
 
-	println(s3File.Key)
 	return s3File.LastModified, nil
-
 }
 
 type S3File struct {

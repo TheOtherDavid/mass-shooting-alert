@@ -24,11 +24,8 @@ func GunViolenceAlert() {
 		fmt.Printf("Error retrieving metadata from S3 bucket: %s\n", err)
 		return
 	}
-	fmt.Printf("LastUpdatedDate: %s\n", lastUpdatedDate)
 
 	var incidents []Incident
-	//TODO: Use the last update date from the file
-	//lastUpdatedDate := time.Now()
 
 	//If the last updated date is NEWER than the last triggered date, download the file
 	//TODO: Pull this out into its own function.
@@ -100,8 +97,6 @@ func getLastTriggeredData() (lastShootingCity string, lastShootingDate time.Time
 	if err != nil {
 		return
 	}
-
-	fmt.Println(lastTriggeredDateString)
 
 	return lastShootingCity, lastShootingDate, lastTriggeredDate, nil
 }
