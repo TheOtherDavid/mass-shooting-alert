@@ -16,7 +16,8 @@ func SendWLEDPulse() error {
 	//First get the current WLED settings
 	currentWled := getWLEDSettings()
 
-	configFile, err := os.Open("config/wled_red_alert_post.json")
+	appRoot := os.Getenv("APP_ROOT")
+	configFile, err := os.Open(appRoot + "/config/wled_red_alert_post.json")
 	if err != nil {
 		return err
 	}
