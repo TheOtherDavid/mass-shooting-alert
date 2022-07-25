@@ -171,15 +171,10 @@ func isNewShootingToday(incidents []Incident, lastShootingCity string, lastShoot
 	if len(incidents) == 0 {
 		return false
 	}
-	response := true
-	for i, incident := range incidents {
-		if incident.City == lastShootingCity && incident.Date == lastShootingDate {
-			response = false
-		}
-		if i > 3 {
-			//Hop out of loop after the first three incidents, since they're in order by time descending.
-			continue
-		}
+	//Since the most recent shooting is always first, we only need to look at the first shooting.
+	incident := incidents[0]
+	if incident.City != lastShootingCity || incident.Date != lastShootingDate {
+		return true
 	}
-	return response
+	return false
 }
