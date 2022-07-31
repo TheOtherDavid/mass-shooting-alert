@@ -43,10 +43,11 @@ func sendWLEDCommand(bodyString string) {
 
 	var jsonprep = []byte(bodyString)
 
-	_, err := http.Post(url, "application/json", bytes.NewBuffer(jsonprep))
+	response, err := http.Post(url, "application/json", bytes.NewBuffer(jsonprep))
 	if err != nil {
 		fmt.Println("Oh no, error.")
 	}
+	defer response.Body.Close()
 }
 
 func getWLEDSettings() string {
