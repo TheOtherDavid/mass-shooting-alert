@@ -45,7 +45,7 @@ func sendWLEDCommand(bodyString string) {
 
 	response, err := http.Post(url, "application/json", bytes.NewBuffer(jsonprep))
 	if err != nil {
-		fmt.Println("Oh no, error.")
+		log.Fatalln(err)
 	}
 	defer response.Body.Close()
 }
