@@ -3,6 +3,7 @@ package alert
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"gopkg.in/ini.v1"
@@ -43,20 +44,29 @@ func GunViolenceAlert() {
 		return
 	}
 
-	//Calculations. Use goroutines?
-	//Maybe find the total number of dead/wounded, and compare it to a high mark like 50?
-	//dead, wounded := extractDailyDeadAndWoundedCount(incidents)
-
 	newShooting := isNewShootingToday(incidents, lastShootingCity, lastShootingDate)
 
 	//If result is true, call WLED
 	if newShooting {
 		fmt.Printf("Oh no, there's a new shooting!\n")
-		//Do some other stuff
-		//Should we make this a goroutine? That way we don't have to wait on it to update the file
-		err = SendWLEDPulse()
-		if err != nil {
-			fmt.Printf("Error sending WLED pulse: %s\n", err)
+		//Calculations
+		//Maybe find the total number of dead/wounded, and compare it to a high mark like 50 to make the pulse different speeds?
+		dead, wounded := extractDailyDeadAndWoundedCount(incidents)
+		victims := dead + wounded
+
+		victimThreshold, _ := strconv.Atoi(os.Getenv("VICTIM_THRESHOLD"))
+
+		//Set a threshold, to only activate for a minimum number of victims
+		if victims > victimThreshold {
+			fmt.Printf(strconv.Itoa(victims) + "victims!\n")
+			//Do some other stuff
+			//Should we make this a goroutine? That way we don't have to wait on it to update the file
+			err = SendWLEDPulse()
+			if err != nil {
+				fmt.Printf("Error sending WLED pulse: %s\n", err)
+			}
+		} else {
+			fmt.Printf("Not enough victims to trigger alert.\n")
 		}
 		//Update the data file to have the latest data
 		lastTriggeredIncident := incidents[0]
@@ -145,8 +155,11 @@ func convertDateStringToDate(incidents []Incident) (convertedIncidents []Inciden
 }
 
 func extractDailyDeadAndWoundedCount(incidents []Incident) (int, int) {
-	//TODO: Implement
-	return 0, 0
+	previousIncident := incidents[0]
+	dead, _ := strconv.Atoi(previousIncident.Killed)
+	wounded, _ := strconv.Atoi(previousIncident.Wounded)
+
+	return dead, wounded
 }
 
 func getIncidentsFromToday(incidents []Incident) []Incident {
