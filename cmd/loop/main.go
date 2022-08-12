@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/TheOtherDavid/gun-violence-alert"
+	"github.com/TheOtherDavid/mass-shooting-alert"
 )
 
 func main() {
@@ -16,9 +16,9 @@ func main() {
 			fmt.Printf("LOOP_INTERVAL_SECONDS environment variable must be an integer.\n")
 			return
 		}
-		fmt.Printf("Executing Gun Violence Alert at %s\n", time.Now())
-		alert.GunViolenceAlert()
-		fmt.Printf("Gun Violence Alert complete. Sleeping %d seconds.\n\n", interval)
+		fmt.Printf("Executing Mass Shooting Alert at %s\n", time.Now())
+		alert.MassShootingAlert()
+		fmt.Printf("Mass Shooting Alert complete. Sleeping %d seconds.\n\n", interval)
 		time.Sleep(time.Duration(interval) * time.Second)
 	}
 }

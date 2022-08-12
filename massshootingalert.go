@@ -9,7 +9,7 @@ import (
 	"gopkg.in/ini.v1"
 )
 
-func GunViolenceAlert() {
+func MassShootingAlert() {
 	//Find last triggered date.
 	//Access local data file?
 
