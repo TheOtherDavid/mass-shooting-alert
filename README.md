@@ -1,4 +1,4 @@
-# gun-violence-alert
+# mass-shooting-alert
 
 With the mass shootings plaguing America, it's vital to get the most up-to-date information on the latest bloodbath, so we can offer our thoughts and prayers and get back to doing absolutely nothing to stop it from happening again. To further this aim, I've written an alert system to give a visual indicator whenever a new mass shooting is detected. You will be kept disturbingly aware of the violence that surrounds us all.
 
