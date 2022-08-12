@@ -18,7 +18,7 @@ func main() {
 		}
 		fmt.Printf("Executing Gun Violence Alert at %s\n", time.Now())
 		alert.GunViolenceAlert()
-		fmt.Printf("Gun Violence Alert complete. Sleeping %d seconds.\n", interval)
+		fmt.Printf("Gun Violence Alert complete. Sleeping %d seconds.\n\n", interval)
 		time.Sleep(time.Duration(interval) * time.Second)
 	}
 }
