@@ -53,12 +53,12 @@ func MassShootingAlert() {
 		//Maybe find the total number of dead/wounded, and compare it to a high mark like 50 to make the pulse different speeds?
 		dead, wounded := extractDailyDeadAndWoundedCount(incidents)
 		victims := dead + wounded
+		fmt.Printf(strconv.Itoa(victims) + "victims.\n")
 
 		victimThreshold, _ := strconv.Atoi(os.Getenv("VICTIM_THRESHOLD"))
 
 		//Set a threshold, to only activate for a minimum number of victims
-		if victims > victimThreshold {
-			fmt.Printf(strconv.Itoa(victims) + "victims!\n")
+		if victims >= victimThreshold {
 			//Do some other stuff
 			//Should we make this a goroutine? That way we don't have to wait on it to update the file
 			err = SendWLEDPulse()
