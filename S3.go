@@ -74,7 +74,7 @@ func getIncidents() (incidents []Incident, err error) {
 	//So they have an S3 bucket, and we should get the file
 	bucket := "mass-shooting-tracker-data"
 	// TODO: Dynamically construct this
-	year := "2022"
+	year := "2023"
 	//Target filename: 2022-data.json
 	filename := year + "-data.json"
 
