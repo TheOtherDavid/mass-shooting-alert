@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 )
@@ -17,7 +18,8 @@ func SendWLEDPulse() error {
 	currentWled := getWLEDSettings()
 
 	appRoot := os.Getenv("APP_ROOT")
-	configFile, err := os.Open(appRoot + "\\config\\wled_red_alert_post.json")
+	path := filepath.Join(appRoot, "config", "wled_red_alert_post.json")
+	configFile, err := os.Open(path)
 	if err != nil {
 		return err
 	}
